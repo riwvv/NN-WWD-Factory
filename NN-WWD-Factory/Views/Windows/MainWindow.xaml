@@ -7,6 +7,53 @@
         mc:Ignorable="d"
         Title="NN-WWD Factory" Height="450" Width="800">
     <Grid>
-        
+        <Grid.RowDefinitions>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="1*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="1*"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.ColumnSpan="3" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <TextBlock Text="Wake Word: " FontSize="20"/>
+            <TextBox FontSize="20" Width="180" Text="{Binding WakeWordName}"/>
+        </StackPanel>
+
+        <StackPanel Grid.Column="2" Grid.ColumnSpan="3" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <TextBlock Text="Epochs: " FontSize="20"/>
+            <TextBox FontSize="20" Width="180" Text="{Binding EpochsCount}"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Margin="5">
+                <TextBlock Text="Positive examples: " FontSize="20"/>
+                <TextBox FontSize="20" Width="180" Text="{Binding Positive}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="5">
+                <TextBlock Text="Negative examples: " FontSize="20"/>
+                <TextBox FontSize="20" Width="180" Text="{Binding Negative}"/>
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <Button Command="{Binding StartCreatingCommand}" Content="Запустить" Background="#44db81" Foreground="WhiteSmoke" FontSize="20" FontWeight="Medium" Padding="15 5" Margin="5"/>
+            <Button Command="{Binding PauseCreatingCommand}" Content="Приостановить" Background="#e65392" Foreground="WhiteSmoke" FontSize="20" FontWeight="Medium" Padding="15 5" Margin="5"/>
+            <Button Command="{Binding CancelCreatingCommand}" Content="Отменить" Background="#e04a5e" Foreground="WhiteSmoke" FontSize="20" FontWeight="Medium" Padding="15 5" Margin="5"/>
+        </StackPanel>
+
+        <TextBlock Text="{Binding Message}" FontSize="14" Grid.Row="2" Grid.ColumnSpan="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+
+        <StackPanel Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Center">
+            <ProgressBar Value="{Binding Progress}" Width="400" Height="25" VerticalAlignment="Center" Margin="0 10 0 0"/>
+            <TextBlock Text="{Binding Progress}" FontSize="24" VerticalAlignment="Center" Margin="5 0 0 0"/>
+            <TextBlock Text="%" FontSize="24" VerticalAlignment="Center"/>
+        </StackPanel>
     </Grid>
 </Window>

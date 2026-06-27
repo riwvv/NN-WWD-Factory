@@ -12,6 +12,17 @@ public static class AppExtensions {
         return services;
     }
 
+    public static IServiceCollection AddHttpClients(this IServiceCollection services) {
+        services.AddHttpClient("NN-WWD-Server", client => {
+            client.BaseAddress = new Uri("http://localhost:8000");
+            client.Timeout = Timeout.InfiniteTimeSpan;
+            client.DefaultRequestHeaders.Accept.Add(
+                new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json")
+            );
+        });
+        return services;
+    }
+
     public static IServiceCollection AddViewModels(this IServiceCollection services) {
         services.AddSingleton<MainViewModel>();
 
