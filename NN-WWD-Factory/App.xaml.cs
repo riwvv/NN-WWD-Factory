@@ -18,6 +18,7 @@ public partial class App : Application {
         .UseSerilog((context, services, config) => config.ReadFrom.Configuration(context.Configuration)
                 .WriteTo.Debug())
         .ConfigureServices((context, services) => services
+            .AddServices()
             .AddViewModels()
             .AddViews());
 
@@ -56,5 +57,24 @@ public partial class App : Application {
                 MessageBoxImage.Error);
             Shutdown();
         }
+    }
+
+    protected override async void OnExit(ExitEventArgs e) {
+        Log.Information("Приложение завершает работу...");
+        try {
+            if (_host != null) {
+                await _host.StopAsync(TimeSpan.FromSeconds(5));
+                _host.Dispose();
+            }
+        }
+        catch (Exception ex) {
+            Log.Error(ex, "Ошибка при остановке хоста");
+        }
+
+        _mutex.ReleaseMutex();
+        _mutex.Dispose();
+
+        Log.CloseAndFlush();
+        base.OnExit(e);
     }
 }
