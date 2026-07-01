@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Net.Http.Json;
-using System.Net.Http;
+using Microsoft.Win32;
 using NN_WWD_Factory.Models;
 using NN_WWD_Factory.Models.DTOs;
+using System.IO;
+using System.Net.Http;
+using System.Net.Http.Json;
 
 namespace NN_WWD_Factory.Services;
 
@@ -10,9 +12,9 @@ public class ConnectionToFactoryServerService(IHttpClientFactory httpClientFacto
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient("NN-WWD-Server");
 
     public async Task<(bool Success, byte[]? ModelData, string? Message)> TrainAndDownloadAsync(
-        RequestBody request,
-        IProgress<(int Progress, string Message)> progress,
-        CancellationToken cancellationToken = default) {
+    RequestBody request,
+    IProgress<(int Progress, string Message)> progress,
+    CancellationToken cancellationToken = default) {
 
         try {
             progress.Report((0, "Запуск обучения..."));
@@ -33,11 +35,24 @@ public class ConnectionToFactoryServerService(IHttpClientFactory httpClientFacto
                 return (false, null, status.Message);
             }
 
-            progress.Report((90, "Скачивание модели..."));
-            var modelData = await DownloadModelAsync(taskId);
+            progress.Report((90, "Скачивание пакета..."));
+            var packageData = await DownloadPackageAsync(taskId);
 
-            progress.Report((100, "Готово!"));
-            return (true, modelData, "Модель успешно обучена");
+            // Диалог сохранения
+            var saveFileDialog = new SaveFileDialog {
+                Filter = "ZIP архив|*.zip",
+                Title = "Сохранить модель",
+                FileName = $"{request.WakeWord}_model_package.zip"
+            };
+
+            if (saveFileDialog.ShowDialog() == true) {
+                await File.WriteAllBytesAsync(saveFileDialog.FileName, packageData, cancellationToken);
+                progress.Report((100, $"Модель сохранена: {saveFileDialog.FileName}"));
+                return (true, packageData, $"Модель сохранена: {saveFileDialog.FileName}");
+            }
+            else {
+                return (false, null, "Сохранение отменено пользователем");
+            }
         }
         catch (OperationCanceledException) {
             return (false, null, "Операция отменена пользователем");
@@ -80,6 +95,20 @@ public class ConnectionToFactoryServerService(IHttpClientFactory httpClientFacto
         }
     }
 
+    private async Task<byte[]> DownloadPackageAsync(string taskId) {
+        try {
+            var response = await _httpClient.GetAsync($"/download-package/{taskId}");
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadAsByteArrayAsync();
+        }
+        catch (Exception ex) {
+            _logger.LogError(ex, $"Ошибка скачивания пакета для {taskId}");
+            throw;
+        }
+    }
+
+    // Старый метод DownloadModelAsync можно удалить или оставить для обратной совместимости
     private async Task<byte[]> DownloadModelAsync(string taskId) {
         try {
             var response = await _httpClient.GetAsync($"/download/{taskId}");

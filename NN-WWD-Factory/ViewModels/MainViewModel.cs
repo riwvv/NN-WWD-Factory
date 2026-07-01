@@ -10,32 +10,40 @@ namespace NN_WWD_Factory.ViewModels;
 
 public partial class MainViewModel(ConnectionToFactoryServerService _service, ILogger<MainViewModel> _logger) : ObservableObject {
     [ObservableProperty]
-    private string _wakeWordName = string.Empty;
+    private string _wakeWordName = "джарвис"; // значение по умолчанию
 
     [ObservableProperty]
-    private int _positive = 0;
+    private int _positive = 500;
 
     [ObservableProperty]
-    private int _negative = 0;
+    private int _negative = 1000;
 
     [ObservableProperty]
-    private int _epochsCount = 0;
+    private int _epochsCount = 20;
 
     [ObservableProperty]
-    private string _message = string.Empty;
+    private string _message = "Готов к работе";
 
     [ObservableProperty]
     private int _progress = 0;
+
+    [ObservableProperty]
+    private bool _isBusy = false;
 
     private CancellationTokenSource? _cts;
 
     [RelayCommand]
     private async Task StartCreating() {
-        _logger.LogInformation("Начало создания");
-        _logger.LogInformation($"Указано ключевое слово: {WakeWordName}");
+        // Проверка, что введено слово
+        if (string.IsNullOrWhiteSpace(WakeWordName)) {
+            Message = "⚠️ Введите ключевое слово";
+            return;
+        }
+
+        _logger.LogInformation($"Начало создания для слова: {WakeWordName}");
 
         var request = new RequestBody {
-            WakeWord = WakeWordName,
+            WakeWord = WakeWordName.Trim(),
             SampleRate = 24000,
             CountPerText = Positive,
             NegativeCount = Negative,
@@ -43,51 +51,55 @@ public partial class MainViewModel(ConnectionToFactoryServerService _service, IL
         };
 
         _cts = new CancellationTokenSource();
+        IsBusy = true;
+        Progress = 0;
+        Message = $"🚀 Запуск обучения для '{WakeWordName}'...";
 
-        var progress = new Progress<(int Progress, string Message)>(p => {
-            Progress = p.Progress;
-            Message = p.Message;
-        });
+        try {
+            var progress = new Progress<(int Progress, string Message)>(p => {
+                Progress = p.Progress;
+                Message = p.Message;
+            });
 
-        var (success, modelData, message) = await _service.TrainAndDownloadAsync(
-            request,
-            progress,
-            _cts.Token
-        );
+            var (success, modelData, message) = await _service.TrainAndDownloadAsync(
+                request,
+                progress,
+                _cts.Token
+            );
 
-        _logger.LogInformation($"Статус: {success}");
+            _logger.LogInformation($"Статус: {success}");
 
-        if (success && modelData != null) {
-            var savePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"{WakeWordName}_model.pth");
-            await File.WriteAllBytesAsync(savePath, modelData);
-            Message = $"Модель сохранена: {savePath}";
+            if (success && modelData != null) {
+                // Модель уже сохранена через SaveFileDialog в сервисе
+                Message = message ?? "✅ Модель успешно сохранена";
+                Progress = 100;
+            }
+            else {
+                Message = $"❌ {message ?? "Ошибка обучения"}";
+            }
         }
-        else {
-            if (message != null && !string.IsNullOrEmpty(message))
-                Message = message;
+        catch (OperationCanceledException) {
+            Message = "⏹️ Операция отменена";
+            _logger.LogInformation("Операция отменена пользователем");
+        }
+        catch (Exception ex) {
+            _logger.LogError(ex, "Ошибка обучения");
+            Message = $"❌ Ошибка: {ex.Message}";
+        }
+        finally {
+            IsBusy = false;
         }
     }
 
     [RelayCommand]
     private void PauseCreating() {
-
+        Message = "⏸️ Пауза (не реализовано)";
     }
 
     [RelayCommand]
     private void CancelCreating() {
         _logger.LogInformation("Отмена операции...");
-
         _cts?.Cancel();
-
-        try {
-            using var httpClient = new HttpClient();
-            var response = httpClient.PostAsync("http://localhost:8000/shutdown", null).Result;
-            if (response.IsSuccessStatusCode) {
-                _logger.LogInformation("Сервер остановлен");
-            }
-        }
-        catch {
-            _logger.LogWarning("Не удалось остановить сервер через API");
-        }
+        Message = "⏹️ Отмена запрошена...";
     }
 }
