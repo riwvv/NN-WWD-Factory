@@ -13,13 +13,13 @@ public partial class MainViewModel(ConnectionToFactoryServerService _service, IL
     private string _wakeWordName = "джарвис"; // значение по умолчанию
 
     [ObservableProperty]
-    private int _positive = 500;
+    private int _positive = 100;
 
     [ObservableProperty]
-    private int _negative = 1000;
+    private int _negative = 200;
 
     [ObservableProperty]
-    private int _epochsCount = 20;
+    private int _epochsCount = 5;
 
     [ObservableProperty]
     private string _message = "Готов к работе";

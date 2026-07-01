@@ -8,6 +8,7 @@ namespace NN_WWD_Factory.Extensions;
 public static class AppExtensions {
     public static IServiceCollection AddServices(this IServiceCollection services) {
         services.AddSingleton<ConnectionToFactoryServerService>();
+        services.AddSingleton<ModelPackageBuilder>();
 
         return services;
     }
